@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "server/_core/index.ts",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "installCommand": "pnpm install --no-frozen-lockfile"
+      }
     },
     {
       "src": "client/index.html",
