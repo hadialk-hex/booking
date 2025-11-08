@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO `doctors` (`name`, `specialization`, `isActive`) VALUES\n('dr.Magdi', 'Dental', true),\n('Dr.Anwar', 'Surgical', true),\n('Dr.Rooney Touma', 'Dental', true),\n('Dr.Nour hammouda', 'GB', true),\n('Abdelrehim', 'Nutrition', true),\n('Dr.Mayar Al ali', 'Dental', true),\n('Dr.Mahmoud Abdelaziz', 'GB', true),\n('Dr.Mohammed Hamouda', 'Dental', true),\n('Dr.Alaa alafaosh', 'GB', true),\n('Dr.Obada Qabel', 'Dermatology', true),\n('Elsanie', 'laser', true),\n('Farah', 'Derma', true),\n('Nada Adel', 'Nutrition', true),\n('Eman Albasha', 'Physical therapists', true),\n('Hamza', 'Physical therapists', true);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3ZoyxYcWrWmf447.root --database nudeuYNmnsftkEWvjomRFZ --execute INSERT INTO `doctors` (`name`, `specialization`, `isActive`) VALUES\n('dr.Magdi', 'Dental', true),\n('Dr.Anwar', 'Surgical', true),\n('Dr.Rooney Touma', 'Dental', true),\n('Dr.Nour hammouda', 'GB', true),\n('Abdelrehim', 'Nutrition', true),\n('Dr.Mayar Al ali', 'Dental', true),\n('Dr.Mahmoud Abdelaziz', 'GB', true),\n('Dr.Mohammed Hamouda', 'Dental', true),\n('Dr.Alaa alafaosh', 'GB', true),\n('Dr.Obada Qabel', 'Dermatology', true),\n('Elsanie', 'laser', true),\n('Farah', 'Derma', true),\n('Nada Adel', 'Nutrition', true),\n('Eman Albasha', 'Physical therapists', true),\n('Hamza', 'Physical therapists', true);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1536
+}

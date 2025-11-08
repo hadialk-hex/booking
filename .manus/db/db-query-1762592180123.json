@@ -1,0 +1,13 @@
+{
+  "query": "SELECT id FROM users WHERE openId = 'test_reception_001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3ZoyxYcWrWmf447.root --database nudeuYNmnsftkEWvjomRFZ --execute SELECT id FROM users WHERE openId = 'test_reception_001';",
+  "rows": [
+    {
+      "id": "1350024"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\n1350024\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}

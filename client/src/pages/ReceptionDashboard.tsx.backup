@@ -1,0 +1,462 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { trpc } from "@/lib/trpc";
+import { Calendar, Loader2, DollarSign } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { translations } from "@/lib/i18n";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { convertTo12Hour } from "@/lib/timeUtils";
+
+export default function ReceptionDashboard() {
+  const { user, loading, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+  const { language } = useLanguage();
+  const t = translations[language];
+  
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>("all");
+  const [editingPrice, setEditingPrice] = useState<any>(null);
+  const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+
+  const { data: appointments, isLoading, refetch } = trpc.appointments.listAll.useQuery();
+  const { data: bookingSources } = trpc.bookingSources.listActive.useQuery();
+  const updateMutation = trpc.appointments.update.useMutation();
+
+  useEffect(() => {
+    if (!loading && (!isAuthenticated || user?.role !== 'reception')) {
+      setLocation('/');
+    }
+  }, [loading, isAuthenticated, user, setLocation]);
+
+  const filteredAppointments = useMemo(() => {
+    if (!appointments) return [];
+    
+    return appointments.filter((apt) => {
+      const aptDate = new Date(apt.appointmentDate).toISOString().split('T')[0];
+      const matchesDate = aptDate === selectedDate;
+      const matchesStatus = selectedStatus === "all" || apt.status === selectedStatus;
+      const matchesSource = selectedSourceFilter === "all" || apt.bookingSourceId?.toString() === selectedSourceFilter;
+      return matchesDate && matchesStatus && matchesSource;
+    });
+  }, [appointments, selectedDate, selectedStatus, selectedSourceFilter]);
+
+  const stats = useMemo(() => {
+    if (!appointments) return { total: 0, arrived: 0, scheduled: 0, noShow: 0, noAnswer: 0 };
+    
+    const todayAppts = appointments.filter(apt => {
+      const aptDate = new Date(apt.appointmentDate).toISOString().split('T')[0];
+      return aptDate === new Date().toISOString().split('T')[0];
+    });
+
+    return {
+      total: todayAppts.length,
+      arrived: todayAppts.filter(a => a.status === 'arrived').length,
+      scheduled: todayAppts.filter(a => a.status === 'scheduled').length,
+      noShow: todayAppts.filter(a => a.status === 'no_show').length,
+      noAnswer: todayAppts.filter(a => a.status === 'no_answer').length,
+    };
+  }, [appointments]);
+
+  const handleStatusChange = async (appointmentId: number, newStatus: string) => {
+    try {
+      await updateMutation.mutateAsync({
+        id: appointmentId,
+        status: newStatus as any,
+      });
+      toast.success(t.statusUpdated);
+      refetch();
+    } catch (error) {
+      toast.error(t.error);
+    }
+  };
+
+  const handlePriceUpdate = async () => {
+    if (!editingPrice || !editingPrice.price) {
+      toast.error(t.fillRequired);
+      return;
+    }
+
+    try {
+      await updateMutation.mutateAsync({
+        id: editingPrice.id,
+        price: parseFloat(editingPrice.price),
+      });
+      toast.success(t.priceUpdated);
+      setIsPriceDialogOpen(false);
+      setEditingPrice(null);
+      refetch();
+    } catch (error) {
+      toast.error(t.error);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      scheduled: { label: t.scheduled, className: "bg-blue-100 text-blue-800" },
+      arrived: { label: t.arrived, className: "bg-green-100 text-green-800" },
+      no_show: { label: t.noShow, className: "bg-red-100 text-red-800" },
+      no_answer: { label: t.noAnswer, className: "bg-gray-100 text-gray-800" },
+    };
+    
+    const config = statusMap[status] || statusMap.scheduled;
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  if (loading || !isAuthenticated || user?.role !== 'reception') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{t.welcome} 👋 {user?.displayName || user?.name}</h1>
+            <p className="text-gray-600 mt-1">{t.receptionDashboard}</p>
+          </div>
+          <LanguageSwitcher />
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">{t.todayTotal}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.total}</div>
+              <p className="text-xs text-blue-100 mt-1">{t.appointments}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">{t.arrived}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.arrived}</div>
+              <p className="text-xs text-green-100 mt-1">{t.bookings}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">{t.scheduled}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.scheduled}</div>
+              <p className="text-xs text-purple-100 mt-1">{t.bookings}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">{t.noShow}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.noShow}</div>
+              <p className="text-xs text-red-100 mt-1">{t.bookings}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-gray-500 to-gray-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">{t.noAnswer}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.noAnswer}</div>
+              <p className="text-xs text-gray-100 mt-1">{t.bookings}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Appointments Table */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <CardTitle>{t.allAppointmentsByDate}</CardTitle>
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">{t.status}:</Label>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.all}</SelectItem>
+                      <SelectItem value="scheduled">{t.scheduled}</SelectItem>
+                      <SelectItem value="arrived">{t.arrived}</SelectItem>
+                      <SelectItem value="no_show">{t.noShow}</SelectItem>
+                      <SelectItem value="no_answer">{t.noAnswer}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">{language === 'ar' ? 'المصدر' : 'Source'}:</Label>
+                  <Select value={selectedSourceFilter} onValueChange={setSelectedSourceFilter}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder={language === 'ar' ? 'الكل' : 'All'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === 'ar' ? 'الكل' : 'All'}</SelectItem>
+                      {bookingSources?.map(source => (
+                        <SelectItem key={source.id} value={source.id.toString()}>
+                          {source.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-40"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : filteredAppointments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                {t.noAppointments}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table dir="rtl">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">{t.time}</TableHead>
+                      <TableHead className="text-right">{t.patientName}</TableHead>
+                      <TableHead className="text-right">{t.patientPhone}</TableHead>
+                      <TableHead className="text-right">{t.doctor}</TableHead>
+                      <TableHead className="text-right">{language === 'ar' ? 'الكول سنتر' : 'Call Center'}</TableHead>
+                      <TableHead className="text-right">{t.status}</TableHead>
+                      <TableHead className="text-right">{t.actions}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAppointments.map((apt) => (
+                      <TableRow 
+                        key={apt.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => {
+                          setSelectedAppointment(apt);
+                          setIsDetailsDialogOpen(true);
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          {convertTo12Hour(apt.appointmentTime)}
+                        </TableCell>
+                        <TableCell>{apt.patientName}</TableCell>
+                        <TableCell>{apt.patientPhone}</TableCell>
+                        <TableCell>{apt.doctorName}</TableCell>
+                        <TableCell>{apt.createdByName}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={apt.status}
+                            onValueChange={(value) => handleStatusChange(apt.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue>{getStatusBadge(apt.status)}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="scheduled">{t.scheduled}</SelectItem>
+                              <SelectItem value="arrived">{t.arrived}</SelectItem>
+                              <SelectItem value="no_show">{t.noShow}</SelectItem>
+                              <SelectItem value="no_answer">{t.noAnswer}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingPrice({ id: apt.id, price: apt.price || '' });
+                              setIsPriceDialogOpen(true);
+                            }}
+                          >
+                            <DollarSign className="w-4 h-4 mr-1" />
+                            {apt.price ? `${apt.price} ${language === 'ar' ? 'ريال' : 'SAR'}` : t.addPrice}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Appointment Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className={language === 'ar' ? 'text-right' : 'text-left'}>
+              {t.appointmentDetails || (language === 'ar' ? 'تفاصيل الحجز' : 'Appointment Details')}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedAppointment && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-600">{t.patientName}</Label>
+                  <p className="font-medium">{selectedAppointment.patientName}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{t.patientPhone}</Label>
+                  <p className="font-medium">{selectedAppointment.patientPhone}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{t.doctor}</Label>
+                  <p className="font-medium">{selectedAppointment.doctorName}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{t.date}</Label>
+                  <p className="font-medium">
+                    {new Date(selectedAppointment.appointmentDate).toLocaleDateString('en-GB', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{t.time}</Label>
+                  <p className="font-medium">
+                    {convertTo12Hour(selectedAppointment.appointmentTime)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{t.status}</Label>
+                  <p className="font-medium">{getStatusBadge(selectedAppointment.status)}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{language === 'ar' ? 'المبلغ' : 'Price'}</Label>
+                  <p className="font-medium">
+                    {selectedAppointment.price ? `${selectedAppointment.price} ${language === 'ar' ? 'ريال' : 'SAR'}` : (language === 'ar' ? 'لم يتم التحديد' : 'Not set')}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{language === 'ar' ? 'مصدر الحجز' : 'Booking Source'}</Label>
+                  <p className="font-medium">{selectedAppointment.bookingSourceName || (language === 'ar' ? 'غير محدد' : 'Not specified')}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">{language === 'ar' ? 'تم الحجز بواسطة' : 'Booked by'}</Label>
+                  <p className="font-medium">{selectedAppointment.createdByName}</p>
+                </div>
+                {selectedAppointment.appointmentType && (
+                  <div>
+                    <Label className="text-gray-600">{language === 'ar' ? 'نوع الخدمة' : 'Service Type'}</Label>
+                    <p className="font-medium">{selectedAppointment.appointmentType}</p>
+                  </div>
+                )}
+              </div>
+              {selectedAppointment.notes && (
+                <div>
+                  <Label className="text-gray-600">{language === 'ar' ? 'ملاحظات' : 'Notes'}</Label>
+                  <p className="font-medium whitespace-pre-wrap">{selectedAppointment.notes}</p>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDetailsDialogOpen(false);
+                    setEditingPrice({ id: selectedAppointment.id, price: selectedAppointment.price || '' });
+                    setIsPriceDialogOpen(true);
+                  }}
+                >
+                  <DollarSign className="w-4 h-4 mr-1" />
+                  {t.updatePrice}
+                </Button>
+                <Button onClick={() => setIsDetailsDialogOpen(false)}>
+                  {t.close || (language === 'ar' ? 'إغلاق' : 'Close')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Price Dialog */}
+      <Dialog open={isPriceDialogOpen} onOpenChange={setIsPriceDialogOpen}>
+        <DialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle className={language === 'ar' ? 'text-right' : 'text-left'}>{t.updatePrice}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>{t.priceInSAR}</Label>
+              <Input
+                type="number"
+                value={editingPrice?.price || ''}
+                onChange={(e) => setEditingPrice({ ...editingPrice, price: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsPriceDialogOpen(false)}>
+                {t.cancel}
+              </Button>
+              <Button onClick={handlePriceUpdate}>
+                {t.save}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

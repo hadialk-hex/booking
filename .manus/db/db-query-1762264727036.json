@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO `bookingSources` (`id`, `name`, `isActive`) VALUES\n(1, 'إعلانات سناب | Snab AD', true),\n(2, 'إعلانات فيسبوك | Facebook AD', true),\n(3, 'إعلانات إنستا | Insta AD', true),\n(4, 'واتساب | Whatsapp', true),\n(5, 'مكالمة | Call', true),\n(6, 'بيانات | Data', true),\n(30001, 'إعلانات تيك توك | Tik Tok AD', true);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3ZoyxYcWrWmf447.root --database nudeuYNmnsftkEWvjomRFZ --execute INSERT INTO `bookingSources` (`id`, `name`, `isActive`) VALUES\n(1, 'إعلانات سناب | Snab AD', true),\n(2, 'إعلانات فيسبوك | Facebook AD', true),\n(3, 'إعلانات إنستا | Insta AD', true),\n(4, 'واتساب | Whatsapp', true),\n(5, 'مكالمة | Call', true),\n(6, 'بيانات | Data', true),\n(30001, 'إعلانات تيك توك | Tik Tok AD', true);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1507
+}

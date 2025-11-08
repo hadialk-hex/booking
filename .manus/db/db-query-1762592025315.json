@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, name, email, role, isApproved FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3ZoyxYcWrWmf447.root --database nudeuYNmnsftkEWvjomRFZ --execute SELECT id, name, email, role, isApproved FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Hassona Wise",
+      "email": "hassonawise@gmail.com",
+      "role": "admin",
+      "isApproved": "1"
+    },
+    {
+      "id": "60",
+      "name": "hadi alk",
+      "email": "hadialk3@gmail.com",
+      "role": "reception",
+      "isApproved": "1"
+    },
+    {
+      "id": "30068",
+      "name": "Mohamed Younes beautywisw",
+      "email": "mohamedyounesbeautywisw@gmail.com",
+      "role": "call_center",
+      "isApproved": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tisApproved\n1\tHassona Wise\thassonawise@gmail.com\tadmin\t1\n60\thadi alk\thadialk3@gmail.com\treception\t1\n30068\tMohamed Younes beautywisw\tmohamedyounesbeautywisw@gmail.com\tcall_center\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1603
+}

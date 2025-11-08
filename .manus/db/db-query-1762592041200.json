@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, name, displayName, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3ZoyxYcWrWmf447.root --database nudeuYNmnsftkEWvjomRFZ --execute SELECT id, name, displayName, role FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Hassona Wise",
+      "displayName": "HADI ALKASSEM",
+      "role": "admin"
+    },
+    {
+      "id": "60",
+      "name": "hadi alk",
+      "displayName": "هادي",
+      "role": "reception"
+    },
+    {
+      "id": "30068",
+      "name": "Mohamed Younes beautywisw",
+      "displayName": "محمد",
+      "role": "call_center"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdisplayName\trole\n1\tHassona Wise\tHADI ALKASSEM\tadmin\n60\thadi alk\tهادي\treception\n30068\tMohamed Younes beautywisw\tمحمد\tcall_center\n",
+  "stderr": "",
+  "execution_time_ms": 1524
+}
