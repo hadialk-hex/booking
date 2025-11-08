@@ -5,12 +5,17 @@
       "src": "server/_core/index.ts",
       "use": "@vercel/node",
       "config": {
-        "installCommand": "pnpm install --no-frozen-lockfile"
+        "installCommand": "pnpm install --no-frozen-lockfile",
+        "buildCommand": "pnpm run build:server"
       }
     },
     {
       "src": "client/index.html",
-      "use": "@vercel/static"
+      "use": "@vercel/static",
+      "config": {
+        "buildCommand": "pnpm run build:client",
+        "outputDirectory": "dist"
+      }
     }
   ],
   "routes": [
